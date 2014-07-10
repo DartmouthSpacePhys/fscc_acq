@@ -1,0 +1,5 @@
+# build files
+*.o
+
+#executable
+fscc_acq
