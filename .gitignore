@@ -3,3 +3,8 @@
 
 #executable
 fscc_acq
+fscc_acq_transparent_sleeper
+disable_port_receive
+
+#log files
+*.log
