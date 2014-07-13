@@ -9,10 +9,10 @@ LDFLAGS = -pipe -Wall -lm -pthread -lcfscc -O2
 
 EXEC = fscc_acq
 
-SRC = fscc_acq.c fscc_helpers.c
+SRC = simple_fifo.c fscc_acq.c fscc_helpers.c
 OBJ = $(SRC:.c=.o)
 
-HEADERS = defaults.h fscc_errors.h fscc_helpers.h fscc_struct.h $(EXEC).h
+HEADERS = simple_fifo.h defaults.h fscc_errors.h fscc_helpers.h fscc_struct.h $(EXEC).h
 
 all: $(SRC) $(EXEC)
 

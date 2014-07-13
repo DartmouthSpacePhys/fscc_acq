@@ -310,6 +310,7 @@ int init_fscc(int port, struct fscc_opt *o, struct fscc_port *c){
 
     /* ####CCR2#### */
     /* #(0-3) Frame Sync Receive Offset = 0b1111 (data aligned with FSR signal) */
+    /* #(31-16) Receive Length Check = 0X8000 (32768 bytes) */
     c->regs.CCR2 = 0x0;
     c->regs.SSR = 0x0;
     c->regs.SMR = 0x0;
@@ -408,7 +409,7 @@ int fscc_status(int port, fscc_handle h) {
   printf("TSR: %" PRIx64 "\n", regs.TSR);
   printf("TMR: %" PRIx64 "\n", regs.TMR);
   printf("\n");
-  printf("Rx-Multiple staus: %u\n", rx_multiple_status);
+  printf("Rx-Multiple status: %u\n", rx_multiple_status);
 
   return EXIT_SUCCESS;
 }

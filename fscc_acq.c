@@ -32,6 +32,7 @@
 #include <termios.h>
 
 #include <fscc.h> /* fscc_* */
+#include "simple_fifo.h"
 #include "fscc_errors.h"
 #include "fscc_helpers.h"
 #include "fscc_acq.h"
@@ -301,12 +302,9 @@ void *fscc_data_pt(void *threadarg) {
   struct fscc_ptargs arg;
   arg = *(struct fscc_ptargs *) threadarg;
 
-//!!! Need to figure out how this is going to work.
-//It's possible that the computer/FSCC is angry with you because you are
-//disabling both receivers then trying to read, or perhaps creating two
-//handles to the receivers and then discarding them, or perhaps you're
-//asking too many things to happen at once and just need to put in some
-//sleep here and there.
+  struct simple_fifo *fifo;
+  long int fifo_loc;
+  char *fifo_outbytes;
 
   fscc_handle h = arg.pc->h;
   int e = 0;
@@ -319,9 +317,7 @@ void *fscc_data_pt(void *threadarg) {
   double telapsed;
   long long unsigned int i = 0;
   long long unsigned int frames, wcount;
-//  struct frame_sync sync;
 
-//  char dataz[arg.o.acqsize]; // why?
   char *dataz;
   char ostr[1024];
   struct tm ct;
@@ -334,8 +330,10 @@ void *fscc_data_pt(void *threadarg) {
   
   rtdbytes = arg.o.rtdsize*sizeof(short int);
   
-  //	printf("size of struct: %li, sync: %li\n", sizeof(struct frame_sync), sizeof(sync));
-    
+  fifo = malloc( sizeof (*fifo) );
+  fifo_init(fifo, 4*rtdbytes);
+  fifo_outbytes = malloc(rtdbytes);
+
   e = toggle_receive(arg.np,arg.pc,1);
   e = fscc_status(arg.np, h);
 
@@ -365,22 +363,17 @@ void *fscc_data_pt(void *threadarg) {
   receiving = 1;
   while (*arg.running) {
     if (arg.o.debug) { printf("Serial port %i debug.\n", arg.np); fflush(stdout); }
-
-    //MAYBE USE THIS OR SOMETHING LIKE IT TO SLEEP IF WE DON'T HAVE A TIMING SIGNAL
-    /* if (!(fifo_status & 0b01)) { // Wait for acquire sequence line */
-    /*   usleep(10); */
-    /*   continue; */
-    /* } */
-
-    usleep(110000);
+    
+    count = 0;
+    ret = 0;
+    usleep(60000);
       
     // read
     if (arg.o.debug) { printf("Serial port %i read data.\n", arg.np); fflush(stdout); }
     
-    //    memset(dataz, 0xff, arg.o.acqsize);
     memset(dataz, 0, arg.o.acqsize);
     if (receiving) {
-      e = fscc_read_with_timeout(h, dataz, arg.o.acqsize, &count, 1000);
+      e = fscc_read_with_timeout(h, dataz, arg.o.acqsize, &count, 100);
     }
     else {
       e = 1;
@@ -412,8 +405,8 @@ void *fscc_data_pt(void *threadarg) {
 	  e = toggle_receive(arg.np, arg.pc, 1);
 	  receiving = 1;
 	}	
-	else if ( ee != 0 ) { 
-	  while( ee != 0) {
+	else if ( ee == 16000 ) { 
+	  while( ee == 16000) {
 	    fprintf(stderr,"Timed out--are you sure you're providing a clock signal?\n");
 	    fprintf(stderr, "Sleep it off for 1 second...\n");
 	    sleep(1);
@@ -507,15 +500,26 @@ void *fscc_data_pt(void *threadarg) {
 	
       //if (arg.np == 1) { printf("w"); fflush(stdout); }
       //	        check_acq_seq(dev_handle, arg.np, &fifo_acqseq);
-    if ((arg.o.dt > 0) && (count == arg.o.acqsize)) {
+    if (arg.o.dt > 0) {
 	// Copy into RTD memory if we're running the display
 	  
-      pthread_mutex_lock(arg.rlock);
-      if (arg.o.debug)
-	printf("port %i rtd moving rtdbytes %i from cfb %p to rtdb %p with %u avail.\n",
-	       arg.np, rtdbytes, dataz, arg.rtdframe, count);
-      memmove(arg.rtdframe, dataz, rtdbytes);
-      pthread_mutex_unlock(arg.rlock);
+
+      fifo_write(fifo, dataz, count);
+
+      if( fifo_avail(fifo) > 2*rtdbytes ) {
+      
+	fifo_loc = fifo_search(fifo, "Dartmouth College", 2*rtdbytes);
+	fifo_kill(fifo, fifo_loc);
+	fifo_read(fifo_outbytes, fifo, rtdbytes);
+
+	pthread_mutex_lock(arg.rlock);
+	if (arg.o.debug)
+	  printf("Port %i rtd moving rtdbytes %i from cfb %p to rtdb %p with %u avail.\n",
+		 arg.np, rtdbytes, dataz, arg.rtdframe, count);
+	memmove(arg.rtdframe, fifo_outbytes, rtdbytes);
+	pthread_mutex_unlock(arg.rlock);
+    
+      } 
     }
 	
     frames++;
