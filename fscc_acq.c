@@ -366,7 +366,7 @@ void *fscc_data_pt(void *threadarg) {
     
     count = 0;
     ret = 0;
-    usleep(60000);
+    usleep(110000);
       
     // read
     if (arg.o.debug) { printf("Serial port %i read data.\n", arg.np); fflush(stdout); }
@@ -507,7 +507,7 @@ void *fscc_data_pt(void *threadarg) {
       fifo_write(fifo, dataz, count);
 
       if( fifo_avail(fifo) > 2*rtdbytes ) {
-      
+	printf("I made it inside fifo.\n");
 	fifo_loc = fifo_search(fifo, "Dartmouth College", 2*rtdbytes);
 	fifo_kill(fifo, fifo_loc);
 	fifo_read(fifo_outbytes, fifo, rtdbytes);
