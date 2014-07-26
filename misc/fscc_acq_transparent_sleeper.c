@@ -120,7 +120,7 @@ int main(void)
   /* unsigned tmp; */
   unsigned timeout = 1000;
   struct fscc_memory_cap memcap;
-  char fname[] = "/home/spencerh/data/master_test.data";
+  char fname[] = "/home/spencerh/data/master_test_WALLOPS.data";
 
   FILE *fp;
   fp = fopen(fname,"wb");

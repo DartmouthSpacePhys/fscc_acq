@@ -1,0 +1,28 @@
+#!/bin/bash
+if [ $1 ]
+then 
+    if  [ -d /sys/class/fscc ]
+    then
+	echo "Status of port $1:"
+	echo "Registers:"
+	echo "CCR0: `cat /sys/class/fscc/fscc$1/registers/ccr0`"
+	echo "CCR1: `cat /sys/class/fscc/fscc$1/registers/ccr1`"
+	echo "CCR2: `cat /sys/class/fscc/fscc$1/registers/ccr2`"
+	echo ""
+	echo "Memory caps:"
+	echo "Input memory cap: `cat /sys/class/fscc/fscc$1/info/input_memory`"
+	echo "Output memory cap: `cat /sys/class/fscc/fscc$1/info/output_memory`"
+	echo ""
+	echo "Input frames: `cat /sys/class/fscc/fscc$1/info/input_frames`"
+	echo "Output frames: `cat /sys/class/fscc/fscc$1/info/output_frames`"
+	echo ""
+	echo "Rx_multiple status: `cat /sys/class/fscc/fscc$1/settings/rx_multiple`"
+    else 
+	echo "Directory /sys/class/fscc does not exist!"
+	echo "FSCC-LVDS not turned on?"
+    fi
+else    
+    echo "fscc_status <port number>"
+    echo -e "\t<port number> is either 0 or 1"
+    echo ""
+fi
